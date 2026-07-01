@@ -32,6 +32,8 @@
   const PIPE_WIDTH = 70;
   const PIPE_SPACING = 260;
   const PIPE_SPEED = 160;
+  const SPEED_STEP_EVERY = 5;
+  const SPEED_STEP_AMOUNT = 15;
   const BIRD_X_RATIO = 0.3;
   const BIRD_SIZE = 34;
 
@@ -98,7 +100,7 @@
   function update(dt) {
     if (state !== 'playing') return;
     elapsed += dt;
-    speed = PIPE_SPEED + Math.min(elapsed * 4, 80);
+    speed = PIPE_SPEED + Math.floor(score / SPEED_STEP_EVERY) * SPEED_STEP_AMOUNT;
 
     bird.vy += GRAVITY * dt;
     bird.y += bird.vy * dt;
