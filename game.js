@@ -50,6 +50,7 @@
     };
     pipes = [];
     score = 0;
+    scoreEl.textContent = '0';
     speed = PIPE_SPEED;
     elapsed = 0;
     spawnPipe(W + 100);
@@ -65,6 +66,7 @@
 
   function flap() {
     if (state === 'ready') {
+      reset();
       state = 'playing';
       startScreen.classList.add('hidden');
       hud.classList.remove('hidden');
