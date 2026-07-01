@@ -9,10 +9,36 @@
   const finalScoreEl = document.getElementById('final-score');
   const finalBestEl = document.getElementById('final-best');
   const startBestEl = document.getElementById('start-best');
+  const startFlightsEl = document.getElementById('start-flights');
+  const startFlowersEl = document.getElementById('start-flowers');
+  const finalFlightsEl = document.getElementById('final-flights');
+  const finalFlowersEl = document.getElementById('final-flowers');
+  const muteBtn = document.getElementById('mute-btn');
+  const shareBtn = document.getElementById('share-btn');
 
   const BEST_KEY = 'mithoo-best-score';
+  const FLIGHTS_KEY = 'mithoo-lifetime-flights';
+  const FLOWERS_KEY = 'mithoo-lifetime-flowers';
+  const MUTED_KEY = 'mithoo-muted';
+
   let best = parseInt(localStorage.getItem(BEST_KEY) || '0', 10);
+  let lifetimeFlights = parseInt(localStorage.getItem(FLIGHTS_KEY) || '0', 10);
+  let lifetimeFlowers = parseInt(localStorage.getItem(FLOWERS_KEY) || '0', 10);
+  let muted = localStorage.getItem(MUTED_KEY) === '1';
   startBestEl.textContent = best;
+
+  function renderLifetimeStats() {
+    startFlightsEl.textContent = lifetimeFlights;
+    startFlowersEl.textContent = lifetimeFlowers;
+    finalFlightsEl.textContent = lifetimeFlights;
+    finalFlowersEl.textContent = lifetimeFlowers;
+  }
+  renderLifetimeStats();
+
+  function renderMuteBtn() {
+    muteBtn.textContent = muted ? '🔇' : '🔊';
+  }
+  renderMuteBtn();
 
   let W, H, DPR;
   function resize() {
@@ -37,8 +63,17 @@
   const BIRD_X_RATIO = 0.3;
   const BIRD_SIZE = 34;
 
+  const CROWN_SCORE = 15;
+  const MILESTONES = [
+    { score: 10, text: 'Nice flight!' },
+    { score: 25, text: "Mithoo's proud!" },
+    { score: 50, text: 'Soaring high!' },
+    { score: 100, text: 'Incredible!' },
+  ];
+
   let state = 'ready'; // ready | playing | dead
   let bird, pipes, score, speed, elapsed;
+  let particles, trailTimer, milestone, milestonesHit;
 
   function reset() {
     bird = {
@@ -53,9 +88,17 @@
     scoreEl.textContent = '0';
     speed = PIPE_SPEED;
     elapsed = 0;
+    particles = [];
+    trailTimer = 0;
+    milestone = null;
+    milestonesHit = new Set();
     spawnPipe(W + 100);
     spawnPipe(W + 100 + PIPE_SPACING);
     spawnPipe(W + 100 + PIPE_SPACING * 2);
+
+    lifetimeFlights++;
+    localStorage.setItem(FLIGHTS_KEY, String(lifetimeFlights));
+    renderLifetimeStats();
   }
 
   const BLOOM_COLORS = ['#FF6B81', '#FFC145', '#FF9F73', '#E85C8A', '#FFD3E0'];
@@ -84,6 +127,7 @@
     if (state === 'playing') {
       bird.vy = FLAP_VELOCITY;
       bird.flapT = 1;
+      spawnFlapBurst(bird.x - BIRD_SIZE * 0.3, bird.y);
       playChirp();
     }
   }
@@ -95,6 +139,9 @@
       best = score;
       localStorage.setItem(BEST_KEY, String(best));
     }
+    lifetimeFlowers += score;
+    localStorage.setItem(FLOWERS_KEY, String(lifetimeFlowers));
+    renderLifetimeStats();
     finalScoreEl.textContent = score;
     finalBestEl.textContent = best;
     hud.classList.add('hidden');
@@ -121,6 +168,18 @@
       return;
     }
 
+    trailTimer -= dt;
+    if (trailTimer <= 0) {
+      spawnTrailParticle(bird.x - BIRD_SIZE * 0.6, bird.y + 4);
+      trailTimer = 0.06;
+    }
+    updateParticles(dt);
+
+    if (milestone) {
+      milestone.timer -= dt;
+      if (milestone.timer <= 0) milestone = null;
+    }
+
     for (const p of pipes) {
       p.x -= speed * dt;
 
@@ -128,6 +187,14 @@
         p.passed = true;
         score++;
         scoreEl.textContent = score;
+
+        for (const m of MILESTONES) {
+          if (score === m.score && !milestonesHit.has(m.score)) {
+            milestonesHit.add(m.score);
+            milestone = { text: m.text, timer: 1.8, maxTimer: 1.8 };
+            playChime();
+          }
+        }
       }
 
       const bx = bird.x, by = bird.y, r = BIRD_SIZE * 0.4;
@@ -148,10 +215,24 @@
     }
   }
 
+  function lerp(a, b, t) {
+    return a + (b - a) * t;
+  }
+
+  function lerpColor(c1, c2, t) {
+    return `rgb(${Math.round(lerp(c1[0], c2[0], t))},${Math.round(lerp(c1[1], c2[1], t))},${Math.round(lerp(c1[2], c2[2], t))})`;
+  }
+
+  const SKY_DAY_TOP = [126, 200, 227];
+  const SKY_DAY_BOTTOM = [191, 233, 208];
+  const SKY_SUNSET_TOP = [255, 183, 130];
+  const SKY_SUNSET_BOTTOM = [255, 214, 204];
+
   function drawBackground() {
+    const t = Math.min(elapsed / 60, 1);
     const g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, '#7EC8E3');
-    g.addColorStop(1, '#BFE9D0');
+    g.addColorStop(0, lerpColor(SKY_DAY_TOP, SKY_SUNSET_TOP, t));
+    g.addColorStop(1, lerpColor(SKY_DAY_BOTTOM, SKY_SUNSET_BOTTOM, t));
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
 
@@ -163,8 +244,33 @@
       drawCloud(cx, cy);
     }
 
+    drawButterflies();
+
     ctx.fillStyle = '#8FBF6B';
     ctx.fillRect(0, H - 30, W, 30);
+  }
+
+  const BUTTERFLY_COLORS = ['#F7A6C4', '#F9E27D', '#B79CED'];
+
+  function drawButterflies() {
+    for (let i = 0; i < 3; i++) {
+      const speed = 26 + i * 6;
+      const offset = (elapsed * speed + i * 220) % (W + 160);
+      const x = (W + 160) - offset - 80;
+      const y = 140 + i * 110 + Math.sin(elapsed * 2.4 + i * 2) * 20;
+      drawButterfly(x, y, BUTTERFLY_COLORS[i], elapsed * 10 + i * 3);
+    }
+  }
+
+  function drawButterfly(x, y, color, flapPhase) {
+    const wingSpan = 6 + Math.sin(flapPhase) * 3;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.ellipse(x - 4, y, wingSpan, 5, 0.4, 0, Math.PI * 2);
+    ctx.ellipse(x + 4, y, wingSpan, 5, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#3a3a3a';
+    ctx.fillRect(x - 0.7, y - 4, 1.4, 8);
   }
 
   function drawCloud(x, y) {
@@ -493,6 +599,76 @@
     ctx.arc(BIRD_SIZE * 0.28, -8, 2.6, 0, Math.PI * 2);
     ctx.fill();
 
+    // Cosmetic unlock: a little flower crown once you've reached a good score.
+    if (best >= CROWN_SCORE || score >= CROWN_SCORE) {
+      drawFlower(BIRD_SIZE * 0.16, -BIRD_SIZE * 0.42, 7, '#FFD3E0');
+    }
+
+    ctx.restore();
+  }
+
+  function spawnFlapBurst(x, y) {
+    for (let i = 0; i < 6; i++) {
+      const ang = Math.random() * Math.PI * 2;
+      const spd = 40 + Math.random() * 60;
+      particles.push({
+        x, y,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd - 20,
+        life: 0.5,
+        maxLife: 0.5,
+        size: 3 + Math.random() * 2,
+        color: Math.random() < 0.5 ? '#FFF6C8' : '#5FA052',
+      });
+    }
+  }
+
+  function spawnTrailParticle(x, y) {
+    particles.push({
+      x, y,
+      vx: -30 - Math.random() * 20,
+      vy: (Math.random() - 0.5) * 20,
+      life: 0.6,
+      maxLife: 0.6,
+      size: 2.5 + Math.random() * 1.5,
+      color: '#F2924B',
+    });
+  }
+
+  function updateParticles(dt) {
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const pt = particles[i];
+      pt.x += pt.vx * dt;
+      pt.y += pt.vy * dt;
+      pt.vy += 60 * dt;
+      pt.life -= dt;
+      if (pt.life <= 0) particles.splice(i, 1);
+    }
+  }
+
+  function drawParticles() {
+    for (const pt of particles) {
+      ctx.globalAlpha = Math.max(0, pt.life / pt.maxLife);
+      ctx.fillStyle = pt.color;
+      ctx.beginPath();
+      ctx.ellipse(pt.x, pt.y, pt.size, pt.size * 0.6, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawMilestone() {
+    if (!milestone) return;
+    const fadeIn = Math.min(1, (milestone.maxTimer - milestone.timer) / 0.25);
+    const fadeOut = Math.min(1, milestone.timer / 0.4);
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, Math.min(fadeIn, fadeOut));
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 28px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.shadowColor = 'rgba(0,0,0,0.35)';
+    ctx.shadowBlur = 6;
+    ctx.fillText(milestone.text, W / 2, H * 0.32);
     ctx.restore();
   }
 
@@ -500,8 +676,10 @@
     drawBackground();
     drawScenery();
     drawPipes();
+    drawParticles();
     if (bird) drawBird();
     drawForegroundFoliage();
+    drawMilestone();
   }
 
   let audioCtx;
@@ -513,6 +691,7 @@
   }
 
   function playChirp() {
+    if (muted) return;
     ensureAudio();
     const t = audioCtx.currentTime;
     const osc = audioCtx.createOscillator();
@@ -530,6 +709,7 @@
   }
 
   function playThud() {
+    if (muted) return;
     ensureAudio();
     const t = audioCtx.currentTime;
     const osc = audioCtx.createOscillator();
@@ -544,6 +724,82 @@
     osc.stop(t + 0.3);
   }
 
+  function playChime() {
+    if (muted) return;
+    ensureAudio();
+    const t = audioCtx.currentTime;
+    [0, 0.12, 0.24].forEach((delay, i) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      const freq = [660, 880, 1100][i];
+      osc.frequency.setValueAtTime(freq, t + delay);
+      gain.gain.setValueAtTime(0.0001, t + delay);
+      gain.gain.exponentialRampToValueAtTime(0.12, t + delay + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + delay + 0.25);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(t + delay);
+      osc.stop(t + delay + 0.3);
+    });
+  }
+
+  let ambienceTimer = null;
+
+  function playSoftPad() {
+    if (muted) return;
+    ensureAudio();
+    const t = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(220, t);
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.linearRampToValueAtTime(0.02, t + 1.2);
+    gain.gain.linearRampToValueAtTime(0.0001, t + 3.5);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(t);
+    osc.stop(t + 3.6);
+  }
+
+  function playSoftBirdChirp() {
+    if (muted) return;
+    ensureAudio();
+    const t = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    const base = 1800 + Math.random() * 800;
+    osc.frequency.setValueAtTime(base, t);
+    osc.frequency.exponentialRampToValueAtTime(base * 1.3, t + 0.05);
+    osc.frequency.exponentialRampToValueAtTime(base * 0.8, t + 0.1);
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.05, t + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(t);
+    osc.stop(t + 0.13);
+  }
+
+  function scheduleAmbienceTick() {
+    playSoftPad();
+    if (Math.random() < 0.5) {
+      setTimeout(() => { if (!muted) playSoftBirdChirp(); }, 400 + Math.random() * 800);
+    }
+    ambienceTimer = setTimeout(scheduleAmbienceTick, 3000 + Math.random() * 2500);
+  }
+
+  function startAmbience() {
+    if (muted || ambienceTimer) return;
+    scheduleAmbienceTick();
+  }
+
+  function stopAmbience() {
+    if (ambienceTimer) {
+      clearTimeout(ambienceTimer);
+      ambienceTimer = null;
+    }
+  }
+
   let last = performance.now();
   function loop(now) {
     const dt = Math.min((now - last) / 1000, 0.033);
@@ -556,9 +812,42 @@
   bird = { x: W * BIRD_X_RATIO, y: H / 2, vy: 0, rot: 0, flapT: 0 };
   pipes = [];
   score = 0;
+  speed = PIPE_SPEED;
+  elapsed = 0;
+  particles = [];
+  trailTimer = 0;
+  milestone = null;
+  milestonesHit = new Set();
+
+  muteBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
+  muteBtn.addEventListener('click', () => {
+    muted = !muted;
+    localStorage.setItem(MUTED_KEY, muted ? '1' : '0');
+    renderMuteBtn();
+    if (muted) {
+      stopAmbience();
+    } else {
+      ensureAudio();
+      startAmbience();
+    }
+  });
+
+  if (!navigator.share) {
+    shareBtn.style.display = 'none';
+  } else {
+    shareBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
+    shareBtn.addEventListener('click', () => {
+      navigator.share({
+        title: "Mithoo's Adventure",
+        text: `I scored ${score} in Mithoo's Adventure! 🐦`,
+        url: location.href,
+      }).catch(() => {});
+    });
+  }
 
   window.addEventListener('pointerdown', (e) => {
     ensureAudio();
+    if (!muted) startAmbience();
     flap();
   });
   window.addEventListener('keydown', (e) => {
