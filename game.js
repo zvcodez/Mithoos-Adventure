@@ -58,10 +58,13 @@
     spawnPipe(W + 100 + PIPE_SPACING * 2);
   }
 
+  const BLOOM_COLORS = ['#FF6B81', '#FFC145', '#FF9F73', '#E85C8A', '#FFD3E0'];
+
   function spawnPipe(x) {
     const margin = 90;
     const gapY = margin + Math.random() * (H - margin * 2 - PIPE_GAP);
-    pipes.push({ x, gapY, passed: false });
+    const bloomColor = BLOOM_COLORS[Math.floor(Math.random() * BLOOM_COLORS.length)];
+    pipes.push({ x, gapY, passed: false, bloomColor });
   }
 
   function flap() {
@@ -172,22 +175,243 @@
     ctx.fill();
   }
 
+  const SCENE_SPEED = 32;
+  const SCENE_CYCLE = 1150;
+  const SCENE_PATTERN = [
+    { type: 'house', offset: 0 },
+    { type: 'pragya', offset: 460 },
+    { type: 'diksha_gucci', offset: 830 },
+  ];
+
+  function drawScenery() {
+    const groundTop = H - 30;
+    const scroll = elapsed * SCENE_SPEED;
+    for (const item of SCENE_PATTERN) {
+      let wrapped = (item.offset - scroll) % SCENE_CYCLE;
+      if (wrapped < 0) wrapped += SCENE_CYCLE;
+      for (const x of [wrapped - SCENE_CYCLE, wrapped, wrapped + SCENE_CYCLE]) {
+        if (x < -140 || x > W + 140) continue;
+        if (item.type === 'house') drawHouse(x, groundTop);
+        else if (item.type === 'pragya') drawPragyaGroup(x, groundTop);
+        else if (item.type === 'diksha_gucci') drawDikshaGroup(x, groundTop);
+      }
+    }
+  }
+
+  function drawHouse(x, groundTop) {
+    const w = 92, wallH = 54, roofH = 30;
+    const baseY = groundTop;
+
+    ctx.fillStyle = '#A65B4B';
+    ctx.beginPath();
+    ctx.moveTo(x - 10, baseY - wallH);
+    ctx.lineTo(x + w / 2, baseY - wallH - roofH);
+    ctx.lineTo(x + w + 10, baseY - wallH);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = '#F2DFC4';
+    ctx.fillRect(x, baseY - wallH, w, wallH);
+    ctx.strokeStyle = '#C9AD82';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, baseY - wallH, w, wallH);
+
+    ctx.fillStyle = '#8B5E3C';
+    const doorW = 18, doorH = 26;
+    ctx.fillRect(x + w / 2 - doorW / 2, baseY - doorH, doorW, doorH);
+
+    ctx.fillStyle = '#BFE3EE';
+    ctx.strokeStyle = '#8B5E3C';
+    ctx.lineWidth = 1.5;
+    ctx.fillRect(x + 14, baseY - wallH + 12, 16, 16);
+    ctx.strokeRect(x + 14, baseY - wallH + 12, 16, 16);
+    ctx.fillRect(x + w - 30, baseY - wallH + 12, 16, 16);
+    ctx.strokeRect(x + w - 30, baseY - wallH + 12, 16, 16);
+  }
+
+  function drawPerson(x, groundTop, opts) {
+    const scale = opts.scale || 1;
+    const headR = 9 * scale;
+    const bodyW = 17 * scale;
+    const bodyH = 26 * scale;
+    const legH = 18 * scale;
+    const baseY = groundTop;
+    const legsY = baseY - legH;
+    const bodyY = legsY - bodyH;
+    const headCY = bodyY - headR + 1;
+
+    ctx.fillStyle = opts.bottomColor;
+    ctx.fillRect(x - bodyW / 2, legsY, bodyW / 2 - 2 * scale, legH);
+    ctx.fillRect(x + 2 * scale, legsY, bodyW / 2 - 2 * scale, legH);
+
+    ctx.strokeStyle = opts.skin;
+    ctx.lineWidth = 4 * scale;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x - bodyW / 2, bodyY + 4 * scale);
+    ctx.lineTo(x - bodyW / 2 - 6 * scale, bodyY + bodyH - 4 * scale);
+    ctx.moveTo(x + bodyW / 2, bodyY + 4 * scale);
+    ctx.lineTo(x + bodyW / 2 + 6 * scale, bodyY + bodyH - 4 * scale);
+    ctx.stroke();
+
+    ctx.fillStyle = opts.topColor;
+    ctx.fillRect(x - bodyW / 2, bodyY, bodyW, bodyH);
+
+    ctx.fillStyle = opts.skin;
+    ctx.beginPath();
+    ctx.arc(x, headCY, headR, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = opts.hairColor;
+    if (opts.hairStyle === 'curly') {
+      for (let i = 0; i <= 6; i++) {
+        const ang = Math.PI + (i / 6) * Math.PI;
+        const hx = x + Math.cos(ang) * headR * 0.95;
+        const hy = headCY + Math.sin(ang) * headR * 0.95;
+        ctx.beginPath();
+        ctx.arc(hx, hy, headR * 0.42, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (opts.hairStyle === 'bun') {
+      ctx.beginPath();
+      ctx.arc(x, headCY - headR * 0.25, headR * 0.95, Math.PI, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(x, headCY - headR * 1.35, headR * 0.42, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    if (opts.glasses) {
+      ctx.strokeStyle = '#3a3a3a';
+      ctx.lineWidth = 1.2 * scale;
+      ctx.beginPath();
+      ctx.arc(x - headR * 0.42, headCY + headR * 0.05, headR * 0.34, 0, Math.PI * 2);
+      ctx.arc(x + headR * 0.42, headCY + headR * 0.05, headR * 0.34, 0, Math.PI * 2);
+      ctx.moveTo(x - headR * 0.08, headCY + headR * 0.05);
+      ctx.lineTo(x + headR * 0.08, headCY + headR * 0.05);
+      ctx.stroke();
+    }
+  }
+
+  function drawDog(x, groundTop) {
+    const baseY = groundTop;
+    const bodyR = 8;
+    const cx = x, cy = baseY - bodyR;
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, bodyR * 1.3, bodyR, 0, 0, Math.PI * 2);
+    ctx.fill();
+    for (let i = 0; i < 5; i++) {
+      const ang = (i / 4) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.arc(cx + Math.cos(ang) * bodyR * 0.9, cy + Math.sin(ang) * bodyR * 0.6, bodyR * 0.45, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    const headCX = cx + bodyR * 1.15, headCY = cy - bodyR * 0.6;
+    ctx.beginPath();
+    ctx.arc(headCX, headCY, bodyR * 0.75, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(headCX - 4, headCY - 5, 3, 5, -0.3, 0, Math.PI * 2);
+    ctx.ellipse(headCX + 5, headCY - 5, 3, 5, 0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#222';
+    ctx.beginPath();
+    ctx.arc(headCX + 4, headCY, 1.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#EEE';
+    ctx.fillRect(cx - bodyR * 0.9, baseY - 2, 3, 4);
+    ctx.fillRect(cx + bodyR * 0.4, baseY - 2, 3, 4);
+  }
+
+  function drawPragyaGroup(x, groundTop) {
+    drawPerson(x, groundTop, {
+      skin: '#E8B98C',
+      hairColor: '#3B2A20',
+      hairStyle: 'bun',
+      topColor: '#8E6E53',
+      bottomColor: '#4A6FA5',
+      glasses: true,
+      scale: 1.12,
+    });
+  }
+
+  function drawDikshaGroup(x, groundTop) {
+    drawPerson(x, groundTop, {
+      skin: '#F5D9B8',
+      hairColor: '#2E211A',
+      hairStyle: 'curly',
+      topColor: '#E8E4DC',
+      bottomColor: '#4A6FA5',
+      glasses: false,
+      scale: 1,
+    });
+    drawDog(x + 22, groundTop);
+  }
+
+  const POT_COLOR = '#B5651D';
+  const POT_RIM = '#8B4513';
+  const STEM_COLOR = '#5FA052';
+  const LEAF_COLOR = '#4E9F3D';
+
   function drawPipes() {
-    ctx.fillStyle = '#4E9F3D';
-    ctx.strokeStyle = '#2E6B1F';
-    ctx.lineWidth = 3;
     for (const p of pipes) {
       const topH = p.gapY;
-      ctx.fillRect(p.x, 0, PIPE_WIDTH, topH);
-      ctx.strokeRect(p.x, 0, PIPE_WIDTH, topH);
-      ctx.fillRect(p.x - 5, topH - 24, PIPE_WIDTH + 10, 24);
-      ctx.strokeRect(p.x - 5, topH - 24, PIPE_WIDTH + 10, 24);
-
       const botY = p.gapY + PIPE_GAP;
-      ctx.fillRect(p.x, botY, PIPE_WIDTH, H - botY);
-      ctx.strokeRect(p.x, botY, PIPE_WIDTH, H - botY);
-      ctx.fillRect(p.x - 5, botY, PIPE_WIDTH + 10, 24);
-      ctx.strokeRect(p.x - 5, botY, PIPE_WIDTH + 10, 24);
+
+      // Bottom: potted plant growing up from the ground toward the gap.
+      const potH = 26;
+      ctx.fillStyle = STEM_COLOR;
+      ctx.fillRect(p.x, botY, PIPE_WIDTH, (H - potH) - botY);
+      ctx.fillStyle = POT_COLOR;
+      ctx.fillRect(p.x, H - potH, PIPE_WIDTH, potH);
+      ctx.strokeStyle = POT_RIM;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(p.x, H - potH, PIPE_WIDTH, potH);
+      ctx.fillStyle = POT_RIM;
+      ctx.fillRect(p.x - 4, H - potH - 6, PIPE_WIDTH + 8, 8);
+      drawBloomCluster(p.x + PIPE_WIDTH / 2, botY, 1, p.bloomColor);
+
+      // Top: hanging planter with vines trailing down toward the gap.
+      const hangH = 22;
+      ctx.fillStyle = POT_COLOR;
+      ctx.fillRect(p.x, 0, PIPE_WIDTH, hangH);
+      ctx.strokeStyle = POT_RIM;
+      ctx.strokeRect(p.x, 0, PIPE_WIDTH, hangH);
+      ctx.fillStyle = POT_RIM;
+      ctx.fillRect(p.x - 4, hangH - 4, PIPE_WIDTH + 8, 8);
+      ctx.fillStyle = STEM_COLOR;
+      ctx.fillRect(p.x, hangH, PIPE_WIDTH, topH - hangH);
+      drawBloomCluster(p.x + PIPE_WIDTH / 2, topH, -1, p.bloomColor);
+    }
+  }
+
+  function drawBloomCluster(cx, edgeY, dir, bloomColor) {
+    // dir: 1 = cluster sits below edgeY (bottom obstacle), -1 = above edgeY (top obstacle).
+    // Stays entirely on the solid side of edgeY so the gap boundary reads exactly
+    // as cleanly as a plain pipe edge.
+    const r = 6;
+    const cy = edgeY + dir * (r + 1);
+    ctx.fillStyle = LEAF_COLOR;
+    ctx.beginPath();
+    ctx.ellipse(cx - 11, cy, 7, 4, 0.3, 0, Math.PI * 2);
+    ctx.ellipse(cx + 11, cy, 7, 4, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = bloomColor;
+    for (const dx of [-10, 0, 10]) {
+      ctx.beginPath();
+      ctx.arc(cx + dx, cy, r * 0.85, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#FFF6C8';
+    for (const dx of [-10, 0, 10]) {
+      ctx.beginPath();
+      ctx.arc(cx + dx, cy, r * 0.28, 0, Math.PI * 2);
+      ctx.fill();
     }
   }
 
@@ -198,27 +422,47 @@
 
     const flap = bird.flapT > 0.5 ? -1 : 1;
 
-    ctx.fillStyle = '#F2C94C';
+    // Body: green, lovebird-style.
+    ctx.fillStyle = '#5FA052';
     ctx.beginPath();
-    ctx.ellipse(0, 0, BIRD_SIZE * 0.5, BIRD_SIZE * 0.4, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 2, BIRD_SIZE * 0.5, BIRD_SIZE * 0.4, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = '#4FA37A';
+    // Tail: dark grey/black, trailing behind.
+    ctx.fillStyle = '#3A3A3A';
     ctx.beginPath();
-    ctx.ellipse(-4, 2 * flap, BIRD_SIZE * 0.32, BIRD_SIZE * 0.18, -0.3 * flap, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#EB5757';
-    ctx.beginPath();
-    ctx.moveTo(BIRD_SIZE * 0.45, -3);
-    ctx.lineTo(BIRD_SIZE * 0.75, 2);
-    ctx.lineTo(BIRD_SIZE * 0.45, 7);
+    ctx.moveTo(-BIRD_SIZE * 0.42, -2);
+    ctx.lineTo(-BIRD_SIZE * 0.78, -8);
+    ctx.lineTo(-BIRD_SIZE * 0.78, 10);
+    ctx.lineTo(-BIRD_SIZE * 0.42, 10);
     ctx.closePath();
     ctx.fill();
 
+    // Face: peach/orange, lovebird-style.
+    ctx.fillStyle = '#F2924B';
+    ctx.beginPath();
+    ctx.ellipse(BIRD_SIZE * 0.22, -3, BIRD_SIZE * 0.28, BIRD_SIZE * 0.26, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Wing.
+    ctx.fillStyle = '#4A7F40';
+    ctx.beginPath();
+    ctx.ellipse(-4, 4 * flap, BIRD_SIZE * 0.3, BIRD_SIZE * 0.17, -0.3 * flap, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Beak.
+    ctx.fillStyle = '#E8552B';
+    ctx.beginPath();
+    ctx.moveTo(BIRD_SIZE * 0.44, -3);
+    ctx.lineTo(BIRD_SIZE * 0.68, 1);
+    ctx.lineTo(BIRD_SIZE * 0.44, 6);
+    ctx.closePath();
+    ctx.fill();
+
+    // Eye.
     ctx.fillStyle = '#222';
     ctx.beginPath();
-    ctx.arc(BIRD_SIZE * 0.18, -6, 3, 0, Math.PI * 2);
+    ctx.arc(BIRD_SIZE * 0.28, -8, 2.6, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();
@@ -226,6 +470,7 @@
 
   function draw() {
     drawBackground();
+    drawScenery();
     drawPipes();
     if (bird) drawBird();
   }
