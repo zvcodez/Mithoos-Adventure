@@ -83,11 +83,23 @@ canvas {
   border-radius: 50%;
   border: none;
   background: rgba(255, 255, 255, 0.35);
-  font-size: 1.1rem;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 5;
+}
+
+.mute-slash {
+  position: absolute;
+  width: 27px;
+  height: 2.5px;
+  background: #E8552B;
+  border-radius: 2px;
+  transform: rotate(45deg);
+}
+
+.mute-slash.hidden {
+  display: none;
 }
 
 #hud {

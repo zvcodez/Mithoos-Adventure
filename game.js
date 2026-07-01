@@ -14,6 +14,7 @@
   const finalFlightsEl = document.getElementById('final-flights');
   const finalFlowersEl = document.getElementById('final-flowers');
   const muteBtn = document.getElementById('mute-btn');
+  const muteSlashEl = document.getElementById('mute-slash');
   const shareBtn = document.getElementById('share-btn');
 
   const BEST_KEY = 'mithoo-best-score';
@@ -36,7 +37,7 @@
   renderLifetimeStats();
 
   function renderMuteBtn() {
-    muteBtn.textContent = muted ? '🔇' : '🔊';
+    muteSlashEl.classList.toggle('hidden', !muted);
   }
   renderMuteBtn();
 
