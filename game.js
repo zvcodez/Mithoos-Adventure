@@ -286,7 +286,11 @@
       ctx.lineWidth = 1.2 * scale;
       ctx.beginPath();
       ctx.arc(x - headR * 0.42, headCY + headR * 0.05, headR * 0.34, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
       ctx.arc(x + headR * 0.42, headCY + headR * 0.05, headR * 0.34, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
       ctx.moveTo(x - headR * 0.08, headCY + headR * 0.05);
       ctx.lineTo(x + headR * 0.08, headCY + headR * 0.05);
       ctx.stroke();
@@ -298,7 +302,7 @@
     const bodyR = 8;
     const cx = x, cy = baseY - bodyR;
 
-    ctx.fillStyle = '#FFFFFF';
+    ctx.fillStyle = '#E3C29B';
     ctx.beginPath();
     ctx.ellipse(cx, cy, bodyR * 1.3, bodyR, 0, 0, Math.PI * 2);
     ctx.fill();
@@ -323,7 +327,7 @@
     ctx.arc(headCX + 4, headCY, 1.3, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = '#EEE';
+    ctx.fillStyle = '#D4AF7F';
     ctx.fillRect(cx - bodyR * 0.9, baseY - 2, 3, 4);
     ctx.fillRect(cx + bodyR * 0.4, baseY - 2, 3, 4);
   }
@@ -374,7 +378,7 @@
       ctx.strokeRect(p.x, H - potH, PIPE_WIDTH, potH);
       ctx.fillStyle = POT_RIM;
       ctx.fillRect(p.x - 4, H - potH - 6, PIPE_WIDTH + 8, 8);
-      drawBloomCluster(p.x + PIPE_WIDTH / 2, botY, 1, p.bloomColor);
+      drawLeafPair(p.x + PIPE_WIDTH / 2, botY, 1);
 
       // Top: hanging planter with vines trailing down toward the gap.
       const hangH = 22;
@@ -386,32 +390,56 @@
       ctx.fillRect(p.x - 4, hangH - 4, PIPE_WIDTH + 8, 8);
       ctx.fillStyle = STEM_COLOR;
       ctx.fillRect(p.x, hangH, PIPE_WIDTH, topH - hangH);
-      drawBloomCluster(p.x + PIPE_WIDTH / 2, topH, -1, p.bloomColor);
+      drawLeafPair(p.x + PIPE_WIDTH / 2, topH, -1);
     }
   }
 
-  function drawBloomCluster(cx, edgeY, dir, bloomColor) {
-    // dir: 1 = cluster sits below edgeY (bottom obstacle), -1 = above edgeY (top obstacle).
-    // Stays entirely on the solid side of edgeY so the gap boundary reads exactly
-    // as cleanly as a plain pipe edge.
-    const r = 6;
-    const cy = edgeY + dir * (r + 1);
+  function drawLeafPair(cx, edgeY, dir) {
+    // dir: 1 = leaves sit below edgeY (bottom obstacle), -1 = above edgeY (top obstacle).
+    // Stays entirely on the solid side of edgeY, same as a plain pipe edge would.
+    const cy = edgeY + dir * 5;
     ctx.fillStyle = LEAF_COLOR;
     ctx.beginPath();
-    ctx.ellipse(cx - 11, cy, 7, 4, 0.3, 0, Math.PI * 2);
-    ctx.ellipse(cx + 11, cy, 7, 4, -0.3, 0, Math.PI * 2);
+    ctx.ellipse(cx - 10, cy, 7, 4, 0.3, 0, Math.PI * 2);
+    ctx.ellipse(cx + 10, cy, 7, 4, -0.3, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = bloomColor;
-    for (const dx of [-10, 0, 10]) {
+  }
+
+  function drawFlower(cx, cy, size, color) {
+    const petalR = size * 0.55;
+    ctx.fillStyle = color;
+    for (let i = 0; i < 5; i++) {
+      const ang = (i / 5) * Math.PI * 2;
+      const px = cx + Math.cos(ang) * size * 0.5;
+      const py = cy + Math.sin(ang) * size * 0.5;
       ctx.beginPath();
-      ctx.arc(cx + dx, cy, r * 0.85, 0, Math.PI * 2);
+      ctx.ellipse(px, py, petalR, petalR * 0.7, ang, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.fillStyle = '#FFF6C8';
-    for (const dx of [-10, 0, 10]) {
-      ctx.beginPath();
-      ctx.arc(cx + dx, cy, r * 0.28, 0, Math.PI * 2);
-      ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx, cy, size * 0.35, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawForegroundFoliage() {
+    // Flowers that bloom out into the gap, drawn after the bird so Mithoo
+    // visually tucks behind them when he flies close to the edge. Purely
+    // decorative — the actual hitbox is still just the pot/stem rectangle,
+    // so this never changes what's actually safe to fly through.
+    for (const p of pipes) {
+      if (p.x < -60 || p.x > W + 60) continue;
+      const cx = p.x + PIPE_WIDTH / 2;
+      const botY = p.gapY + PIPE_GAP;
+      const topH = p.gapY;
+
+      drawFlower(cx - 10, botY - 6, 9, p.bloomColor);
+      drawFlower(cx + 10, botY - 4, 8, p.bloomColor);
+      drawFlower(cx, botY - 12, 7, p.bloomColor);
+
+      drawFlower(cx - 10, topH + 6, 9, p.bloomColor);
+      drawFlower(cx + 10, topH + 4, 8, p.bloomColor);
+      drawFlower(cx, topH + 12, 7, p.bloomColor);
     }
   }
 
@@ -473,6 +501,7 @@
     drawScenery();
     drawPipes();
     if (bird) drawBird();
+    drawForegroundFoliage();
   }
 
   let audioCtx;
