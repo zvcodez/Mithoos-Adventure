@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+._*
+
+# Editor
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Personal local launcher (not part of the app)
+Claude Code.command

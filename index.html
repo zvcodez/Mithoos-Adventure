@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Mithoo's Adventure</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#7EC8E3">
+
+<!-- iOS home screen -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mithoo's Adventure">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="game-wrap">
+  <canvas id="game"></canvas>
+  <div id="start-screen" class="overlay">
+    <h1>Mithoo's Adventure</h1>
+    <p>Tap to flap</p>
+    <p class="best">Best: <span id="start-best">0</span></p>
+  </div>
+  <div id="gameover-screen" class="overlay hidden">
+    <h1>Game Over</h1>
+    <p>Score: <span id="final-score">0</span></p>
+    <p class="best">Best: <span id="final-best">0</span></p>
+    <p class="hint">Tap to try again</p>
+  </div>
+  <div id="hud" class="hidden"><span id="score">0</span></div>
+</div>
+
+<script src="game.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
+}
+</script>
+</body>
+</html>
