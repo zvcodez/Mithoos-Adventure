@@ -58,11 +58,6 @@ canvas {
   font-size: 0.95rem;
 }
 
-.overlay .stats {
-  opacity: 0.8;
-  font-size: 0.8rem;
-}
-
 .share-btn {
   margin-top: 14px;
   padding: 10px 24px;

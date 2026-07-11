@@ -9,32 +9,16 @@
   const finalScoreEl = document.getElementById('final-score');
   const finalBestEl = document.getElementById('final-best');
   const startBestEl = document.getElementById('start-best');
-  const startFlightsEl = document.getElementById('start-flights');
-  const startFlowersEl = document.getElementById('start-flowers');
-  const finalFlightsEl = document.getElementById('final-flights');
-  const finalFlowersEl = document.getElementById('final-flowers');
   const muteBtn = document.getElementById('mute-btn');
   const muteSlashEl = document.getElementById('mute-slash');
   const shareBtn = document.getElementById('share-btn');
 
   const BEST_KEY = 'mithoo-best-score';
-  const FLIGHTS_KEY = 'mithoo-lifetime-flights';
-  const FLOWERS_KEY = 'mithoo-lifetime-flowers';
   const MUTED_KEY = 'mithoo-muted';
 
   let best = parseInt(localStorage.getItem(BEST_KEY) || '0', 10);
-  let lifetimeFlights = parseInt(localStorage.getItem(FLIGHTS_KEY) || '0', 10);
-  let lifetimeFlowers = parseInt(localStorage.getItem(FLOWERS_KEY) || '0', 10);
   let muted = localStorage.getItem(MUTED_KEY) === '1';
   startBestEl.textContent = best;
-
-  function renderLifetimeStats() {
-    startFlightsEl.textContent = lifetimeFlights;
-    startFlowersEl.textContent = lifetimeFlowers;
-    finalFlightsEl.textContent = lifetimeFlights;
-    finalFlowersEl.textContent = lifetimeFlowers;
-  }
-  renderLifetimeStats();
 
   function renderMuteBtn() {
     muteSlashEl.classList.toggle('hidden', !muted);
@@ -96,10 +80,6 @@
     spawnPipe(W + 100);
     spawnPipe(W + 100 + PIPE_SPACING);
     spawnPipe(W + 100 + PIPE_SPACING * 2);
-
-    lifetimeFlights++;
-    localStorage.setItem(FLIGHTS_KEY, String(lifetimeFlights));
-    renderLifetimeStats();
   }
 
   const BLOOM_COLORS = ['#FF6B81', '#FFC145', '#FF9F73', '#E85C8A', '#FFD3E0'];
@@ -140,9 +120,6 @@
       best = score;
       localStorage.setItem(BEST_KEY, String(best));
     }
-    lifetimeFlowers += score;
-    localStorage.setItem(FLOWERS_KEY, String(lifetimeFlowers));
-    renderLifetimeStats();
     finalScoreEl.textContent = score;
     finalBestEl.textContent = best;
     hud.classList.add('hidden');
