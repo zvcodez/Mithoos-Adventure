@@ -193,24 +193,13 @@
     }
   }
 
-  function lerp(a, b, t) {
-    return a + (b - a) * t;
-  }
-
-  function lerpColor(c1, c2, t) {
-    return `rgb(${Math.round(lerp(c1[0], c2[0], t))},${Math.round(lerp(c1[1], c2[1], t))},${Math.round(lerp(c1[2], c2[2], t))})`;
-  }
-
-  const SKY_DAY_TOP = [126, 200, 227];
-  const SKY_DAY_BOTTOM = [191, 233, 208];
-  const SKY_SUNSET_TOP = [255, 183, 130];
-  const SKY_SUNSET_BOTTOM = [255, 214, 204];
+  const SKY_DAY_TOP = 'rgb(126,200,227)';
+  const SKY_DAY_BOTTOM = 'rgb(191,233,208)';
 
   function drawBackground() {
-    const t = Math.min(elapsed / 60, 1);
     const g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, lerpColor(SKY_DAY_TOP, SKY_SUNSET_TOP, t));
-    g.addColorStop(1, lerpColor(SKY_DAY_BOTTOM, SKY_SUNSET_BOTTOM, t));
+    g.addColorStop(0, SKY_DAY_TOP);
+    g.addColorStop(1, SKY_DAY_BOTTOM);
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
 
@@ -313,33 +302,52 @@
     ctx.strokeRect(x + w - 30, baseY - wallH + 12, 16, 16);
   }
 
+  function roundRectPath(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.arcTo(x + w, y, x + w, y + r, r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+    ctx.lineTo(x + r, y + h);
+    ctx.arcTo(x, y + h, x, y + h - r, r);
+    ctx.lineTo(x, y + r);
+    ctx.arcTo(x, y, x + r, y, r);
+    ctx.closePath();
+  }
+
   function drawPerson(x, groundTop, opts) {
     const scale = opts.scale || 1;
-    const headR = 9 * scale;
-    const bodyW = 17 * scale;
-    const bodyH = 26 * scale;
+    const headR = 9.5 * scale;
+    const bodyW = 16 * scale;
+    const bodyH = 25 * scale;
     const legH = 18 * scale;
+    const legW = 5.5 * scale;
+    const legGap = 3 * scale;
     const baseY = groundTop;
     const legsY = baseY - legH;
     const bodyY = legsY - bodyH;
-    const headCY = bodyY - headR + 1;
+    const headCY = bodyY - headR + 1.5 * scale;
 
     ctx.fillStyle = opts.bottomColor;
-    ctx.fillRect(x - bodyW / 2, legsY, bodyW / 2 - 2 * scale, legH);
-    ctx.fillRect(x + 2 * scale, legsY, bodyW / 2 - 2 * scale, legH);
+    roundRectPath(x - legGap / 2 - legW, legsY, legW, legH, legW / 2);
+    ctx.fill();
+    roundRectPath(x + legGap / 2, legsY, legW, legH, legW / 2);
+    ctx.fill();
 
     ctx.strokeStyle = opts.skin;
-    ctx.lineWidth = 4 * scale;
+    ctx.lineWidth = 3.6 * scale;
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(x - bodyW / 2, bodyY + 4 * scale);
-    ctx.lineTo(x - bodyW / 2 - 6 * scale, bodyY + bodyH - 4 * scale);
-    ctx.moveTo(x + bodyW / 2, bodyY + 4 * scale);
-    ctx.lineTo(x + bodyW / 2 + 6 * scale, bodyY + bodyH - 4 * scale);
+    ctx.moveTo(x - bodyW / 2 + 1 * scale, bodyY + 4 * scale);
+    ctx.quadraticCurveTo(x - bodyW / 2 - 5 * scale, bodyY + bodyH * 0.5, x - bodyW / 2 - 2 * scale, bodyY + bodyH - 3 * scale);
+    ctx.moveTo(x + bodyW / 2 - 1 * scale, bodyY + 4 * scale);
+    ctx.quadraticCurveTo(x + bodyW / 2 + 5 * scale, bodyY + bodyH * 0.5, x + bodyW / 2 + 2 * scale, bodyY + bodyH - 3 * scale);
     ctx.stroke();
 
     ctx.fillStyle = opts.topColor;
-    ctx.fillRect(x - bodyW / 2, bodyY, bodyW, bodyH);
+    roundRectPath(x - bodyW / 2, bodyY, bodyW, bodyH, bodyW * 0.35);
+    ctx.fill();
 
     ctx.fillStyle = opts.skin;
     ctx.beginPath();
@@ -386,7 +394,7 @@
     const bodyR = 8;
     const cx = x, cy = baseY - bodyR;
 
-    ctx.fillStyle = '#E3C29B';
+    ctx.fillStyle = '#F2E8D0';
     ctx.beginPath();
     ctx.ellipse(cx, cy, bodyR * 1.3, bodyR, 0, 0, Math.PI * 2);
     ctx.fill();
@@ -411,7 +419,7 @@
     ctx.arc(headCX + 4, headCY, 1.3, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = '#D4AF7F';
+    ctx.fillStyle = '#E3D5AC';
     ctx.fillRect(cx - bodyR * 0.9, baseY - 2, 3, 4);
     ctx.fillRect(cx + bodyR * 0.4, baseY - 2, 3, 4);
   }
