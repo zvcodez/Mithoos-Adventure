@@ -23,14 +23,24 @@
   <div id="start-screen" class="overlay">
     <h1>Mithoo's Adventure</h1>
     <p>Tap to flap</p>
-    <p class="best">Best: <span id="start-best">0</span></p>
+    <p class="best">Best: <span id="start-best">0</span> &middot; Today: <span id="start-today">0</span></p>
+    <p class="unlock-hint" id="unlock-hint"></p>
   </div>
   <div id="gameover-screen" class="overlay hidden">
     <h1>Game Over</h1>
+    <p id="new-best" class="new-best hidden">🎉 New Best! 🎉</p>
+    <div id="medal-row" class="medal-row hidden">
+      <span id="medal-circle" class="medal"></span>
+      <span id="medal-name"></span>
+    </div>
     <p>Score: <span id="final-score">0</span></p>
-    <p class="best">Best: <span id="final-best">0</span></p>
+    <p class="best">Best: <span id="final-best">0</span> &middot; Today: <span id="final-today">0</span></p>
     <p class="hint">Tap to try again</p>
     <button id="share-btn" class="share-btn" type="button">Share score</button>
+  </div>
+  <div id="pause-screen" class="overlay hidden">
+    <h1>Paused</h1>
+    <p>Tap to resume</p>
   </div>
   <div id="hud" class="hidden"><span id="score">0</span></div>
   <button id="mute-btn" class="icon-btn" type="button" aria-label="Toggle sound">

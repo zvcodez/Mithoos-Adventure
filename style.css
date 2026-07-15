@@ -58,6 +58,40 @@ canvas {
   font-size: 0.95rem;
 }
 
+.new-best {
+  font-weight: 800;
+  color: #FFD700;
+  font-size: 1.15rem;
+}
+
+.new-best.hidden { display: none; }
+
+.medal-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.medal-row.hidden { display: none; }
+
+.medal {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  box-shadow: inset 0 -4px 0 rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.medal.bronze { background: #CD7F32; }
+.medal.silver { background: #C9CDD4; }
+.medal.gold { background: #FFD700; }
+
+.unlock-hint {
+  margin-top: 8px;
+  opacity: 0.85;
+  font-size: 0.9rem;
+}
+
 .share-btn {
   margin-top: 14px;
   padding: 10px 24px;
