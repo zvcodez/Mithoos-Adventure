@@ -3,17 +3,18 @@
 html, body {
   height: 100%;
   overflow: hidden;
-  background: #7EC8E3;
+  /* Sky-to-ground approximation as a fallback backdrop: if the game box
+     ever comes up a sliver short of the real screen (iOS under-reports
+     viewport height in standalone/PWA mode), this blends in instead of
+     showing a flat, mismatched color band. */
+  background: linear-gradient(to bottom, #BEE7F5 0%, #CDEBD6 55%, #8FBF6B 100%);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   touch-action: manipulation;
 }
 
 #game-wrap {
-  position: relative;
-  width: 100vw;
-  height: 100dvh;
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
+  position: fixed;
+  inset: 0;
 }
 
 canvas {

@@ -25,18 +25,28 @@
   const MUTED_KEY = 'mithoo-muted';
   const DAILY_KEY = 'mithoo-daily-best';
 
+  // Only the installed home-screen app persists a best score across visits.
+  // Opening the plain web link (e.g. from the AI hub, or a browser tab) is
+  // always a fresh game — it shares the same origin/localStorage as the
+  // installed app, so without this gate every visit would show and overwrite
+  // whoever's real progress is saved there.
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true;
+
   function todayStr() {
     // Local date (not UTC) so "today" rolls over at the player's midnight.
     return new Date().toLocaleDateString('en-CA');
   }
 
-  let best = parseInt(localStorage.getItem(BEST_KEY) || '0', 10);
+  let best = isStandalone ? parseInt(localStorage.getItem(BEST_KEY) || '0', 10) : 0;
   let muted = localStorage.getItem(MUTED_KEY) === '1';
   let daily = { date: todayStr(), score: 0 };
-  try {
-    const saved = JSON.parse(localStorage.getItem(DAILY_KEY));
-    if (saved && saved.date === todayStr()) daily = saved;
-  } catch (_) {}
+  if (isStandalone) {
+    try {
+      const saved = JSON.parse(localStorage.getItem(DAILY_KEY));
+      if (saved && saved.date === todayStr()) daily = saved;
+    } catch (_) {}
+  }
 
   startBestEl.textContent = best;
   startTodayEl.textContent = daily.score;
@@ -207,18 +217,19 @@
     if (state !== 'playing') return;
     state = 'dead';
     deathAt = performance.now();
+    stopAmbience();
 
     const isNewBest = score > 0 && score > best;
     if (isNewBest) {
       best = score;
-      localStorage.setItem(BEST_KEY, String(best));
+      if (isStandalone) localStorage.setItem(BEST_KEY, String(best));
       spawnConfetti();
     }
 
     if (daily.date !== todayStr()) daily = { date: todayStr(), score: 0 };
     if (score > daily.score) {
       daily.score = score;
-      localStorage.setItem(DAILY_KEY, JSON.stringify(daily));
+      if (isStandalone) localStorage.setItem(DAILY_KEY, JSON.stringify(daily));
     }
 
     finalScoreEl.textContent = score;
