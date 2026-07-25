@@ -1,12 +1,15 @@
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
 
 html, body {
-  height: 100%;
+  /* Deliberately no height here (not 100%, not 100dvh). Any exact height
+     on html/body depends on the same iOS "reported viewport is shorter
+     than the real screen" bug that game-wrap used to have — constraining
+     the box just moves the gap one layer deeper instead of removing it.
+     Left unconstrained, the body's background paints the entire browser
+     canvas by the normal CSS background-propagation rule, which isn't a
+     measurement at all and can't come up short. */
   overflow: hidden;
-  /* Sky-to-ground approximation as a fallback backdrop: if the game box
-     ever comes up a sliver short of the real screen (iOS under-reports
-     viewport height in standalone/PWA mode), this blends in instead of
-     showing a flat, mismatched color band. */
+  overscroll-behavior-y: none;
   background: linear-gradient(to bottom, #BEE7F5 0%, #CDEBD6 55%, #8FBF6B 100%);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   touch-action: manipulation;
