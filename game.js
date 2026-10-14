@@ -112,10 +112,15 @@
   let W, H, DPR;
   function resize() {
     DPR = window.devicePixelRatio || 1;
-    W = canvas.clientWidth = window.innerWidth;
-    H = canvas.clientHeight = window.innerHeight;
-    canvas.width = W * DPR;
-    canvas.height = H * DPR;
+    // Measure the canvas's actual laid-out box (flex:1 inside #game-wrap)
+    // rather than window.innerWidth/innerHeight -- on iOS standalone PWAs
+    // those can under-report the real viewport height, which used to
+    // leave the drawn ground short of the true bottom edge.
+    const rect = canvas.getBoundingClientRect();
+    W = rect.width;
+    H = rect.height;
+    canvas.width = Math.round(W * DPR);
+    canvas.height = Math.round(H * DPR);
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     // Keep the bird and pipe gaps sane if the phone rotates mid-run.
     if (bird) bird.x = W * BIRD_X_RATIO;

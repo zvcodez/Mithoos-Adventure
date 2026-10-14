@@ -1,4 +1,4 @@
-const CACHE = 'mithoo-v5';
+const CACHE = 'mithoo-v6';
 const ASSETS = [
   './',
   './index.html',

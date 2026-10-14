@@ -16,14 +16,21 @@ html, body {
 }
 
 #game-wrap {
-  position: fixed;
-  inset: 0;
+  /* Not position:fixed;inset:0 -- that still asks WebKit "where is the
+     true viewport edge," which is the same under-reported-height bug
+     that html/body used to have (see the comment above). Normal flow +
+     min-height as a floor lets the box (and canvas) extend to wherever
+     the real screen actually ends, same as the body background does. */
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
 }
 
 canvas {
   display: block;
   width: 100%;
-  height: 100%;
+  flex: 1;
 }
 
 .overlay {
