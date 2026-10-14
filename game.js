@@ -465,8 +465,6 @@
   const SCENE_CYCLE = 1150;
   const SCENE_PATTERN = [
     { type: 'house', offset: 0 },
-    { type: 'pragya', offset: 460 },
-    { type: 'diksha_gucci', offset: 830 },
   ];
 
   function drawScenery() {
